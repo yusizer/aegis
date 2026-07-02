@@ -1,0 +1,24 @@
+# Rust / cargo
+target/
+**/target/
+*.lock.user
+
+# RISC Zero build artifacts
+risc0/methods/guest/Cargo.lock
+
+# Logs / run output
+*.log
+err.log
+run.log
+
+# Local proof / env (demo artifacts, regenerable)
+staging/
+proof.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

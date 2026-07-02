@@ -1,0 +1,12 @@
+[package]
+name = "aegis_host"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0"
+hex = "0.4.3"
+risc0-zkvm = { version = "3.0.4", features = ["prove"] }
+risc0-ethereum-contracts = "3.0"
+sha2 = "0.10.8"
+aegis_methods = { path = "../methods" }
