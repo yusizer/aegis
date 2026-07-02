@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Aegis — demo</title>
+<style>
+  :root { --bg:#0b0e14; --panel:#0f1420; --g:#7ee787; --w:#c9d1d9; --dim:#6e7681; --acc:#58a6ff; --red:#ff7b72; --y:#d2a8ff; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body { background:#000; height:100%; }
+  body { font-family:'Cascadia Code',Consolas,'SF Mono',Menlo,monospace; }
+  #stage {
+    width:1280px; height:720px; position:relative; overflow:hidden;
+    background:var(--bg); color:var(--w); font-size:17px; line-height:1.45;
+  }
+  /* title bar */
+  #titlebar { height:30px; display:flex; align-items:center; gap:8px; padding:0 12px;
+    background:#161b22; border-bottom:1px solid #21262d; font-size:13px; color:var(--dim); }
+  #titlebar .dot { width:11px; height:11px; border-radius:50%; }
+  .r{background:#ff5f56} .y{background:#ffbd2e} .g{background:#27c93f}
+  #titlebar .name { margin-left:10px; }
+  /* terminal body */
+  #term { padding:14px 22px; height:calc(720px - 30px - 56px); overflow:hidden; white-space:pre-wrap; word-break:break-word; }
+  .line { white-space:pre-wrap; }
+  .cmd { color:var(--g); }
+  .prompt { color:var(--acc); }
+  .out { color:var(--w); }
+  .ok { color:var(--g); }
+  .bad { color:var(--red); }
+  .dim { color:var(--dim); }
+  .hi { color:var(--y); }
+  .cursor { display:inline-block; width:9px; height:18px; background:var(--g); vertical-align:-3px; animation:blink 1s steps(2) infinite; }
+  @keyframes blink { 50%{opacity:0} }
+  /* caption bar */
+  #cap { position:absolute; left:0; right:0; bottom:0; height:56px; padding:0 22px;
+    display:flex; align-items:center; background:#0a0d13; border-top:1px solid #21262d;
+    color:#d2a8ff; font-size:16px; }
+  #cap .tag { color:#1f6feb; background:#0d2240; border:1px solid #1f6feb33; padding:2px 8px; border-radius:4px; margin-right:12px; font-size:13px; letter-spacing:.5px; }
+  #cap .txt { color:#d2a8ff; }
+  #end { position:absolute; inset:0; background:rgba(0,0,0,.94); display:none; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center; gap:14px; }
+  #end h1 { color:var(--g); font-size:46px; letter-spacing:1px; }
+  #end p { color:var(--w); font-size:22px; }
+  #end a { color:var(--acc); font-size:22px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="titlebar">
+    <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+    <span class="name">aegis@stellar: ~/aegis — zsh</span>
+  </div>
+  <div id="term"></div>
+  <div id="cap"><span class="tag">AEGIS</span><span class="txt" id="captxt"></span></div>
+  <div id="end">
+    <h1>Aegis</h1>
+    <p>Provable clean-funds compliance coprocessor on Stellar</p>
+    <p>RISC Zero zkVM · on-chain Groth16 verify · Soroban Protocol 27</p>
+    <a>github.com/yusizer/aegis</a>
+  </div>
+</div>
+
+<script>
+const term = document.getElementById('term');
+const captxt = document.getElementById('captxt');
+const end = document.getElementById('end');
+
+// timeline of steps. t = start ms. kind: cmd(out typed), out(revealed line), cap(caption), end.
+const steps = [
+  { t: 600,   kind:'cap', text:'A wallet proves — in zero knowledge — that all its counterparties are in a screened allow-set. A Soroban contract gates transfers on that proof.' },
+  { t: 4200,  kind:'cap', text:'1) Off-chain: the RISC Zero zkVM guest proves Merkle membership of K counterparties + a nullifier, WITHOUT revealing the graph.' },
+
+  { t: 7000,  kind:'cmd',  text:'cargo run --release -p aegis_host -- 7b044d64…07351 5E5E…5E5E' },
+  { t: 12500, kind:'out',  cls:'dim', text:'   Compiling aegis_host v0.1.0 …' },
+  { t: 14000, kind:'out',  cls:'dim', text:'    Finished `release` profile [optimized]' },
+  { t: 16500, kind:'out',  text:'wallet_address = 7b044d644342438f29e260adbc1aab7c41ab0114454585ba8acedfdf70107351' },
+  { t: 20500, kind:'out',  text:'Seal (hex): 73c457ba0419df15f4848817f0832e59…   (260 bytes, selector-prefixed)' },
+  { t: 25500, kind:'out',  cls:'hi', text:'Image ID (hex): e7b796e2dd9cb249e5853ba2903f1e94a2aefdc425c36913b3b8911b677018d2' },
+  { t: 30500, kind:'out',  text:'Journal (hex): 7b044d64…48c73f78…eaa7d967…02000000 3930000000000000 01   (109 B)' },
+  { t: 36000, kind:'out',  text:'Journal SHA-256 (hex): d6111886c852da937a5dc2fb6a6dca5ea1ec2318412d209b7597367b17197cf9' },
+  { t: 41500, kind:'out',  cls:'ok', text:'STATS segments=1 total_cycles=262144 user_cycles=104956 paging_cycles=24691' },
+  { t: 45500, kind:'out',  cls:'ok', text:'wrote proof.txt ✓' },
+
+  { t: 48500, kind:'cap', text:'2) On-chain: deploy the Nethermind Groth16 verifier + the Aegis ComplianceRegistry to Soroban (Protocol 27, BN254 host functions).' },
+  { t: 53000, kind:'cmd',  text:'stellar contract deploy --wasm artifacts/groth16_verifier.wasm --source-account alice --network local --alias aegis_verifier' },
+  { t: 60000, kind:'out',  text:'verifier_id = CCO4CWG7BTU4HABSL5VX72D54V6PKXJVVDZXK4L6Y6WLDQZNEPQUUDUK' },
+  { t: 64000, kind:'cmd',  text:'stellar contract deploy --wasm artifacts/compliance_registry.wasm … --alias aegis_registry' },
+  { t: 70000, kind:'out',  text:'registry_id = CBRJNIYRBY7CKDSIPVA7FWUBTTTEVMHBYXR26XN7W3PGUOYPDW55GGQG' },
+
+  { t: 73500, kind:'cap', text:'3) register_compliance: the ComplianceRegistry hashes the journal and calls verify(seal, image_id, journal_digest) on-chain.' },
+  { t: 78000, kind:'cmd',  text:'stellar contract invoke --id aegis_registry --source-account alice --send yes -- \\' },
+  { t: 82500, kind:'cmd',  text:'  register_compliance --wallet alice --journal $J --seal $SEAL --image_id $IMG' },
+  { t: 90000, kind:'out',  cls:'ok', text:'ℹ  Simulating transaction…  Signing…  Sending transaction…' },
+  { t: 96000, kind:'out',  cls:'ok', text:'✅ Transaction submitted successfully!   ← on-chain Groth16 verify PASSED' },
+
+  { t: 101000,kind:'cmd',  text:'stellar contract invoke --id aegis_registry … -- is_cleared --wallet alice' },
+  { t: 106000,kind:'out',  cls:'ok', text:'true' },
+  { t: 109000,kind:'cmd',  text:'stellar contract invoke --id aegis_registry … -- get_clearance --wallet alice' },
+  { t: 114000,kind:'out',  text:'{"as_of_block":12345,"cleared_until_ledger":1130,"k":2,"nullifier":"eaa7d967…"}' },
+
+  { t: 119000,kind:'cap', text:'4) Clean path: a cleared wallet transfers through the gate. transfer_if_cleared checks clearance, then calls the SEP-41 token.' },
+  { t: 124000,kind:'cmd',  text:'stellar contract invoke --id aegis_registry … --send yes -- \\' },
+  { t: 128500,kind:'cmd',  text:'  transfer_if_cleared --from alice --to bob --amount 1000 --token $TOKEN' },
+  { t: 135000,kind:'out',  cls:'ok', text:'✅ Transaction submitted successfully!' },
+  { t: 139000,kind:'out',  text:'balance(alice) = 999999000        balance(bob) = 1000' },
+
+  { t: 144000,kind:'cap', text:'5) Blocked path: bob has NO proof → not cleared → the gate rejects the transfer. ZK is load-bearing: no proof, no path to cleared.' },
+  { t: 149500,kind:'cmd',  text:'stellar contract invoke --id aegis_registry --source-account bob … -- is_cleared --wallet bob' },
+  { t: 154000,kind:'out',  cls:'bad', text:'false' },
+  { t: 157000,kind:'cmd',  text:'stellar contract invoke … --send yes -- transfer_if_cleared --from bob --to alice --amount 1 --token $TOKEN' },
+  { t: 164000,kind:'out',  cls:'bad', text:'❌ error: transaction simulation failed: HostError: Error(Contract, #9)' },
+  { t: 169000,kind:'out',  cls:'bad', text:'   → NotCleared. The gate holds. No valid Groth16 seal ⇒ transfer blocked.' },
+  { t: 175000,kind:'cap', text:'Aegis: provable clean funds on Stellar — privacy preserved, compliance provable, gate enforced by a ZK proof.' },
+  { t: 181000,kind:'end' },
+];
+
+// build elements
+const els = steps.map(s => {
+  if (s.kind === 'cap' || s.kind === 'end') return null;
+  const d = document.createElement('div');
+  d.className = 'line ' + (s.cls || (s.kind === 'cmd' ? 'cmd' : 'out'));
+  if (s.kind === 'cmd') {
+    const p = document.createElement('span'); p.className='prompt'; p.textContent='$ ';
+    d.appendChild(p);
+  }
+  d.style.visibility = 'hidden';
+  term.appendChild(d);
+  return d;
+});
+
+const start = performance.now();
+function tick() {
+  const now = performance.now() - start;
+  let activeCmd = null;
+  for (let i=0;i<steps.length;i++){
+    const s = steps[i], el = els[i];
+    if (!el) continue;
+    if (s.kind === 'cmd') {
+      if (now >= s.t) {
+        el.style.visibility='visible';
+        const full = s.text;
+        const dur = Math.min(4200, full.length*22);
+        const p = (now - s.t)/dur;
+        const n = Math.min(full.length, Math.floor(p*full.length));
+        // text node after prompt
+        if (el.childNodes.length<2){ const t=document.createTextNode(''); el.appendChild(t); }
+        el.childNodes[1].nodeValue = full.slice(0,n) + (n<full.length?'_':'');
+        if (n>=full.length){ el.childNodes[1].nodeValue = full; }
+      }
+    } else { // out
+      if (now >= s.t && el.style.visibility==='hidden'){
+        el.style.visibility='visible';
+        el.textContent = (s.cls==='ok'||s.cls==='bad'||s.cls==='hi') ? s.text : s.text;
+      }
+    }
+  }
+  // captions
+  let curCap = '';
+  for (let i=0;i<steps.length;i++){
+    const s = steps[i];
+    if (s.kind==='cap' && now>=s.t) curCap = s.text;
+  }
+  if (captxt.textContent !== curCap) captxt.textContent = curCap;
+  // end card
+  for (let i=0;i<steps.length;i++){
+    if (steps[i].kind==='end' && now>=steps[i].t){ end.style.display='flex'; break; }
+  }
+  if (now < 188000) requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
