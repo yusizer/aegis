@@ -55,6 +55,7 @@
     <h1>Aegis</h1>
     <p>Provable clean-funds compliance coprocessor on Stellar</p>
     <p>RISC Zero zkVM · on-chain Groth16 verify · Soroban Protocol 27</p>
+    <p>Deployed on the public Stellar testnet — verify on stellar.expert</p>
     <a>github.com/yusizer/aegis</a>
   </div>
 </div>
@@ -69,22 +70,22 @@ const steps = [
   { t: 600,   kind:'cap', text:'A wallet proves — in zero knowledge — that all its counterparties are in a screened allow-set. A Soroban contract gates transfers on that proof.' },
   { t: 4200,  kind:'cap', text:'1) Off-chain: the RISC Zero zkVM guest proves Merkle membership of K counterparties + a nullifier, WITHOUT revealing the graph.' },
 
-  { t: 7000,  kind:'cmd',  text:'cargo run --release -p aegis_host -- 7b044d64…07351 5E5E…5E5E' },
+  { t: 7000,  kind:'cmd',  text:'cargo run --release -p aegis_host -- 8d23f436…d8577587 5E5E…5E5E' },
   { t: 12500, kind:'out',  cls:'dim', text:'   Compiling aegis_host v0.1.0 …' },
   { t: 14000, kind:'out',  cls:'dim', text:'    Finished `release` profile [optimized]' },
-  { t: 16500, kind:'out',  text:'wallet_address = 7b044d644342438f29e260adbc1aab7c41ab0114454585ba8acedfdf70107351' },
-  { t: 20500, kind:'out',  text:'Seal (hex): 73c457ba0419df15f4848817f0832e59…   (260 bytes, selector-prefixed)' },
-  { t: 25500, kind:'out',  cls:'hi', text:'Image ID (hex): e7b796e2dd9cb249e5853ba2903f1e94a2aefdc425c36913b3b8911b677018d2' },
-  { t: 30500, kind:'out',  text:'Journal (hex): 7b044d64…48c73f78…eaa7d967…02000000 3930000000000000 01   (109 B)' },
-  { t: 36000, kind:'out',  text:'Journal SHA-256 (hex): d6111886c852da937a5dc2fb6a6dca5ea1ec2318412d209b7597367b17197cf9' },
-  { t: 41500, kind:'out',  cls:'ok', text:'STATS segments=1 total_cycles=262144 user_cycles=104956 paging_cycles=24691' },
+  { t: 16500, kind:'out',  text:'wallet_address = 8d23f4366820277d8783bcf97aff9421f5be3d47fadf7ce38edd35fad8577587' },
+  { t: 20500, kind:'out',  text:'Seal (hex): 73c457ba207d6da5…429b40b7b   (260 bytes, selector-prefixed)' },
+  { t: 25500, kind:'out',  cls:'hi', text:'Image ID (hex): eddc2223c80408e93512ec945c1832e450e78c334fb482c318c17c929d2d4b6f' },
+  { t: 30500, kind:'out',  text:'Journal (hex): 8d23f436…48c73f78…6831a291…02000000 3930000000000000 01   (109 B)' },
+  { t: 36000, kind:'out',  text:'Journal SHA-256 (hex): 7c4bbcf2e8bab98728d8d2cbc2171e3c8b601ce5b96797165e08eac6d32c732b' },
+  { t: 41500, kind:'out',  cls:'ok', text:'STATS segments=1 total_cycles=262144 user_cycles=105224 paging_cycles=25361' },
   { t: 45500, kind:'out',  cls:'ok', text:'wrote proof.txt ✓' },
 
-  { t: 48500, kind:'cap', text:'2) On-chain: deploy the Nethermind Groth16 verifier + the Aegis ComplianceRegistry to Soroban (Protocol 27, BN254 host functions).' },
-  { t: 53000, kind:'cmd',  text:'stellar contract deploy --wasm artifacts/groth16_verifier.wasm --source-account alice --network local --alias aegis_verifier' },
-  { t: 60000, kind:'out',  text:'verifier_id = CCO4CWG7BTU4HABSL5VX72D54V6PKXJVVDZXK4L6Y6WLDQZNEPQUUDUK' },
-  { t: 64000, kind:'cmd',  text:'stellar contract deploy --wasm artifacts/compliance_registry.wasm … --alias aegis_registry' },
-  { t: 70000, kind:'out',  text:'registry_id = CBRJNIYRBY7CKDSIPVA7FWUBTTTEVMHBYXR26XN7W3PGUOYPDW55GGQG' },
+  { t: 48500, kind:'cap', text:'2) On-chain: deploy the Nethermind Groth16 verifier + the Aegis ComplianceRegistry to the PUBLIC Stellar testnet (Protocol 27, BN254 host functions) — verifiable on stellar.expert.' },
+  { t: 53000, kind:'cmd',  text:'stellar contract deploy --wasm artifacts/groth16_verifier.wasm --source-account alice_testnet --network testnet --alias aegis_verifier_testnet' },
+  { t: 60000, kind:'out',  text:'verifier_id = CBZAX43T4YNSWNWM2GCIHUSNWUAQYMOD5RJZVLNNC3UDIG6Z6IOQUZNB' },
+  { t: 64000, kind:'cmd',  text:'stellar contract deploy --wasm artifacts/compliance_registry.wasm … --network testnet --alias aegis_registry_testnet' },
+  { t: 70000, kind:'out',  text:'registry_id = CAI3XYL2KRM7BCJYN46DODKGIIKMFFNFWYPNKRRWYXVE3ZIXBTGQCERB' },
 
   { t: 73500, kind:'cap', text:'3) register_compliance: the ComplianceRegistry hashes the journal and calls verify(seal, image_id, journal_digest) on-chain.' },
   { t: 78000, kind:'cmd',  text:'stellar contract invoke --id aegis_registry --source-account alice --send yes -- \\' },
@@ -95,7 +96,7 @@ const steps = [
   { t: 101000,kind:'cmd',  text:'stellar contract invoke --id aegis_registry … -- is_cleared --wallet alice' },
   { t: 106000,kind:'out',  cls:'ok', text:'true' },
   { t: 109000,kind:'cmd',  text:'stellar contract invoke --id aegis_registry … -- get_clearance --wallet alice' },
-  { t: 114000,kind:'out',  text:'{"as_of_block":12345,"cleared_until_ledger":1130,"k":2,"nullifier":"eaa7d967…"}' },
+  { t: 114000,kind:'out',  text:'{"as_of_block":12345,"cleared_until_ledger":3397690,"k":2,"nullifier":"6831a291…"}' },
 
   { t: 119000,kind:'cap', text:'4) Clean path: a cleared wallet transfers through the gate. transfer_if_cleared checks clearance, then calls the SEP-41 token.' },
   { t: 124000,kind:'cmd',  text:'stellar contract invoke --id aegis_registry … --send yes -- \\' },

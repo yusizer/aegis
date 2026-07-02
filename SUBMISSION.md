@@ -57,10 +57,12 @@ reachability, batch seal aggregation via `bn254_multi_pairing_check`) are listed
 in the README.
 
 ## Demo video
-`demo.mp4` (2–3 min terminal walkthrough). Upload to YouTube as unlisted and
-paste the link, or upload directly if DoraHacks allows. Generated from
-`demo-video/aegis-demo.html` + `demo-video/record.js` (Playwright) —
-reproducible.
+`aegis-demo.mp4` (2–3 min terminal walkthrough, rendered from the **public
+testnet** run — real seal, image_id, journal, balances, and stellar.expert
+contract IDs). Upload to YouTube as unlisted and paste the link, or upload
+directly if DoraHacks allows. Generated from `demo-video/aegis-demo.html` +
+`demo-video/record.js` (Playwright) — reproducible: `cd demo-video && npm i &&
+node record.js` → webm → ffmpeg → mp4.
 
 ## SDF Discord #zk-chat post
 > Sharing my Stellar Hacks: Real-World ZK submission — **Aegis**, a ZK compliance
@@ -76,6 +78,11 @@ reproducible.
 
 ## Submission checklist
 - [x] Public open-source repo + README — https://github.com/yusizer/aegis
-- [ ] 2–3 min demo video (demo.mp4) attached/linked
+- [x] Deployed on public Stellar testnet (P27) — judge-verifiable on stellar.expert:
+  - Verifier — https://stellar.expert/explorer/testnet/contract/CBZAX43T4YNSWNWM2GCIHUSNWUAQYMOD5RJZVLNNC3UDIG6Z6IOQUZNB
+  - Registry — https://stellar.expert/explorer/testnet/contract/CAI3XYL2KRM7BCJYN46DODKGIIKMFFNFWYPNKRRWYXVE3ZIXBTGQCERB
+  - Token — https://stellar.expert/explorer/testnet/contract/CDQDBN2HA64U4M3MCIDHHRQCL5XOXE5CVSZNFGBAKQ6LD5GFVNE67AMK
+  - `register_compliance` tx (on-chain Groth16 verify) — 25f9e655798756ab8b2d1fd368f566a1ba960a9dd95a5921d26523a920fd6542
+- [ ] 2–3 min demo video (aegis-demo.mp4) attached/linked
 - [ ] Submit BUIDL on DoraHacks before 2026-07-03 17:00 UTC
 - [ ] Post in SDF Discord #zk-chat

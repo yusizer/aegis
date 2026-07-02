@@ -14,7 +14,9 @@
 //! ```text
 //!   [  0..32 ] wallet_address      (32 bytes)
 //!   [ 32..64 ] allow_set_root      (32 bytes)
-//!   [ 64..96 ] nullifier           (32 bytes)
+//!   [ 64..96 ] nullifier           (32 bytes, SHA256("aegis_null"
+//!                       || wallet_address || wallet_secret
+//!                       || allow_set_root || as_of_block))
 //!   [ 96..100] K                   (u32 little-endian)
 //!   [100..108] as_of_block         (u64 little-endian)
 //!   [ 108    ] pass                (1 byte, 1 = cleared)
@@ -33,6 +35,14 @@ use soroban_sdk::{
 
 /// Fixed journal length produced by the Aegis compliance guest.
 const JOURNAL_LEN: usize = 109;
+
+/// Persistent-entry TTL bump targets (in ledgers). Soroban evicts persistent
+/// entries after their TTL elapses without a bump; on a public testnet that
+/// happens in a few hours by default. We bump setup keys on init and clearance
+/// records on register so a deployed demo stays verifiable for the judging
+/// window (~14 days at 5s/ledger).
+const TTL_EXTEND_TO: u32 = 100_000;
+const TTL_THRESHOLD: u32 = 50_000;
 
 #[contract]
 pub struct ComplianceRegistry;
@@ -76,6 +86,8 @@ pub enum Error {
     ProofVerificationFailed = 10,
     BadImageId = 11,
     UnsupportedAddress = 12,
+    ZeroK = 13,
+    TransferFailed = 14,
 }
 
 fn require_admin(env: &Env) {
@@ -142,17 +154,27 @@ impl ComplianceRegistry {
         if s.has(&DataKey::Admin) {
             panic_with_error!(&env, Error::AlreadyInitialized);
         }
+        admin.require_auth();
         s.set(&DataKey::Admin, &admin);
         s.set(&DataKey::VerifierId, &verifier_id);
         s.set(&DataKey::ImageId, &image_id);
         s.set(&DataKey::AllowSetRoot, &allow_set_root);
         s.set(&DataKey::Ttl, &ttl_ledgers);
+        // Bump setup keys so the registry stays live on a public network for the
+        // judging window (Soroban evicts persistent entries by TTL otherwise).
+        s.extend_ttl(&DataKey::Admin, TTL_THRESHOLD, TTL_EXTEND_TO);
+        s.extend_ttl(&DataKey::VerifierId, TTL_THRESHOLD, TTL_EXTEND_TO);
+        s.extend_ttl(&DataKey::ImageId, TTL_THRESHOLD, TTL_EXTEND_TO);
+        s.extend_ttl(&DataKey::AllowSetRoot, TTL_THRESHOLD, TTL_EXTEND_TO);
+        s.extend_ttl(&DataKey::Ttl, TTL_THRESHOLD, TTL_EXTEND_TO);
     }
 
     /// Admin: rotate the ASP allow-set root (e.g. after new clearances / revocations).
     pub fn set_allow_set_root(env: Env, root: BytesN<32>) {
         require_admin(&env);
-        env.storage().persistent().set(&DataKey::AllowSetRoot, &root);
+        let s = env.storage().persistent();
+        s.set(&DataKey::AllowSetRoot, &root);
+        s.extend_ttl(&DataKey::AllowSetRoot, TTL_THRESHOLD, TTL_EXTEND_TO);
     }
 
     /// Register a ZK proof of clean funds for `wallet`. On success, marks the wallet
@@ -197,6 +219,9 @@ impl ComplianceRegistry {
         nul.copy_from_slice(&buf[64..96]);
         let nullifier = BytesN::from_array(&env, &nul);
         let k = u32::from_le_bytes([buf[96], buf[97], buf[98], buf[99]]);
+        if k == 0 {
+            panic_with_error!(&env, Error::ZeroK);
+        }
         let as_of_block = u64::from_le_bytes([
             buf[100], buf[101], buf[102], buf[103], buf[104], buf[105], buf[106], buf[107],
         ]);
@@ -233,6 +258,9 @@ impl ComplianceRegistry {
             nullifier: nullifier.clone(),
         };
         s.set(&DataKey::Cleared(wallet.clone()), &clearance);
+        // Keep the clearance + nullifier records alive on a public network.
+        s.extend_ttl(&DataKey::Cleared(wallet.clone()), TTL_THRESHOLD, TTL_EXTEND_TO);
+        s.extend_ttl(&DataKey::NullifierUsed(nullifier.clone()), TTL_THRESHOLD, TTL_EXTEND_TO);
     }
 
     /// Is `wallet` currently cleared?
@@ -273,7 +301,7 @@ impl ComplianceRegistry {
             env.try_invoke_contract::<Val, InvokeError>(&token, &Symbol::new(&env, "transfer"), args);
         match res {
             Ok(Ok(_)) => {}
-            _ => panic_with_error!(&env, Error::ProofVerificationFailed),
+            _ => panic_with_error!(&env, Error::TransferFailed),
         }
     }
 }
