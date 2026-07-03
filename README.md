@@ -71,9 +71,11 @@ non-replay. Only then is the wallet marked **cleared** for a TTL window.
 
 ## Why RISC Zero (differentiation)
 
-Aegis is the **only RISC Zero zkVM** submission in the field — the other
-competitors use Noir or Circom hand-written circuits. That choice is deliberate
-and load-bearing for the compliance use-case:
+Aegis is the **only RISC Zero zkVM *compliance* coprocessor** in the field —
+other RISC Zero projects target proof-of-reserves, payment receipts, or
+settlement, while the remaining compliance submissions use Noir or Circom
+hand-written circuits. That choice is deliberate and load-bearing for the
+compliance use-case:
 
 - **zkVM over circuits.** Compliance logic is branching and graph-shaped
   (membership today, deny-set + graph reachability tomorrow). Writing it as a
