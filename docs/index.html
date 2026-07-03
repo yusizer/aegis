@@ -71,6 +71,16 @@
       <div class="card p-4"><div class="text-2xl font-bold text-[var(--accent2)]">109 B</div><div class="text-xs text-gray-500 mt-1">journal · env::commit_slice</div></div>
       <div class="card p-4"><div class="text-2xl font-bold text-[var(--accent2)]">14</div><div class="text-xs text-gray-500 mt-1">enforced error codes</div></div>
     </div>
+
+    <!-- LIVE TESTNET STATUS (read-only Soroban RPC fetch) -->
+    <div id="liveStatus" class="mt-6 card p-4 max-w-3xl flex items-center gap-4">
+      <span id="liveDot" class="w-2.5 h-2.5 rounded-full bg-gray-600 pulse shrink-0"></span>
+      <div class="flex-1">
+        <div class="text-sm font-semibold">Public Stellar testnet</div>
+        <div id="liveText" class="text-xs text-gray-500 mono">checking Soroban RPC…</div>
+      </div>
+      <a href="https://stellar.expert/explorer/testnet/contract/CAI3XYL2KRM7BCJYN46DODKGIIKMFFNFWYPNKRRWYXVE3ZIXBTGQCERB" target="_blank" class="text-xs lk shrink-0">registry ↗</a>
+    </div>
   </div>
 </header>
 
@@ -321,6 +331,7 @@
         <span class="font-semibold">Aegis — Provable Clean-Funds Compliance Coprocessor</span>
       </div>
       <p class="text-sm text-gray-500">Stellar Hacks: Real-World ZK · RISC Zero zkVM + Soroban · MIT license</p>
+      <p class="text-xs text-gray-600 mt-2">Production extensions (selective disclosure, batch aggregation, deny-set, Poseidon2, completeness): <a class="lk" href="https://yusizer.github.io/aegis/extensions.html">extensions.html</a> · <a class="lk" href="https://github.com/yusizer/aegis/blob/main/docs/extensions.md">docs/extensions.md ↗</a></p>
     </div>
     <div class="flex gap-3">
       <a href="https://github.com/yusizer/aegis" target="_blank" class="px-4 py-2 rounded-lg border border-[var(--border)] hover:border-[var(--accent)] text-sm transition">GitHub ↗</a>
@@ -328,6 +339,40 @@
     </div>
   </div>
 </footer>
+
+<script>
+// Read-only Soroban testnet RPC probe — no wallet, no transactions, no keys.
+// Fetches getHealth + getLatestLedger and surfaces a live "healthy / ledger N / P27" badge.
+(function () {
+  var dot = document.getElementById('liveDot');
+  var txt = document.getElementById('liveText');
+  if (!dot || !txt) return;
+  var rpc = 'https://soroban-testnet.stellar.org';
+  function post(method) {
+    return fetch(rpc, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: method, params: {} })
+    }).then(function (r) { return r.json(); });
+  }
+  Promise.all([post('getHealth'), post('getLatestLedger')])
+    .then(function (res) {
+      var h = (res[0] && res[0].result) || {};
+      var l = (res[1] && res[1].result) || {};
+      if (h.status === 'healthy' && l.sequence) {
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-[var(--accent2)] pulse shrink-0';
+        var pv = l.protocolVersion ? 'P' + l.protocolVersion : 'P27';
+        txt.textContent = 'healthy · ledger ' + l.sequence + ' · ' + pv + ' · Soroban RPC';
+      } else {
+        txt.textContent = 'testnet RPC reachable · see stellar.expert for contract state';
+      }
+    })
+    .catch(function () {
+      dot.className = 'w-2.5 h-2.5 rounded-full bg-[var(--warn)] pulse shrink-0';
+      txt.textContent = 'RPC unreachable from your network — contracts still live on testnet (see stellar.expert links below)';
+    });
+})();
+</script>
 
 </body>
 </html>

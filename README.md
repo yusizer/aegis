@@ -145,6 +145,38 @@ compliance use-case:
 | Nullifier binding | wallet ‖ secret ‖ root ‖ ledger | note-secret only (typical) |
 | Audit surface | Rust program + standard crates | custom circuit constraints |
 
+### Aegis vs a shielded-pool wallet (ozky-class)
+
+Aegis and a shielded-pool wallet like [ozky](https://github.com/xavio2495/ozky)
+sit in the same compliance niche but make **opposite architectural choices**.
+ozky is a polished, fully-shielded UTXO wallet (Tauri desktop app, 9 Noir
+circuits, in-pool AMM/escrow/channels, selective disclosure via view keys) where
+privacy is the default and disclosure is a choice. Aegis is a **compliance
+coprocessor**: a reusable ZK attestation that gates any SEP-41 transfer, built
+on a zkVM. The trade-offs:
+
+| Dimension | Aegis (zkVM coprocessor) | ozky-class (shielded pool) |
+|---|---|---|
+| Unit of ZK | one clearance attestation (gates N transfers) | one proof per spend (UTXO note) |
+| Default privacy | transfer graph hidden from gate; amounts public on SEP-41 | amount, sender, receiver all hidden |
+| Tokens gated | any SEP-41 via one gate | in-pool shielded assets only |
+| Feature breadth | compliance gate (MVP) | AMM + escrow + channels + payroll |
+| ZK backend | RISC Zero zkVM (Rust program) | Noir / UltraHonk (9 hand circuits) |
+| On-chain verify | ~12M instr (single BN254 pairing) | ~35M instr per circuit (UltraHonk) |
+| Adding compliance logic | add a Rust `for` loop in the guest | re-roll a circuit |
+| Selective disclosure | single attestation view key (extension) | per-note view-key registry + scanning |
+
+Aegis is narrower on **breadth** (no AMM/escrow/channels today) and on
+**default-privacy** (the gate is opt-in, SEP-41 amounts are public). It is
+stronger on **verify cost**, on **audit surface** (Rust + standard crates vs 9
+custom circuits), and on **extensibility** — the compliance logic that gets
+added tomorrow (deny-set, graph reachability, completeness) is a Rust program,
+not a circuit re-roll. The production extensions
+([`docs/extensions.md`](docs/extensions.md)) — selective disclosure, batch seal
+aggregation, deny-set + graph reachability, Poseidon2 swap-in, and
+counterparty-set completeness — are each additive and preserve the single-pairing
+verify shape.
+
 ## Architecture
 
 ```mermaid
