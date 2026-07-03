@@ -22,3 +22,9 @@ Thumbs.db
 # Editor
 .vscode/
 .idea/
+
+# Node (logo build tooling)
+node_modules/
+
+# Private competitor recon (not for public repo)
+recon/
