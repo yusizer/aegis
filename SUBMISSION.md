@@ -15,7 +15,7 @@ compliance provable.
 ## Links
 - **Repo:** https://github.com/yusizer/aegis
 - **Live web demo:** https://yusizer.github.io/aegis/ (interactive overview, clickable testnet contract/tx links on stellar.expert, visual demo flow, security model, comparison table)
-- **Demo video:** `aegis-demo-voiced.mp4` (125s, voiced) — upload to YouTube as unlisted, paste link here: `________________`
+- **Demo video:** https://youtu.be/HwHKL6Jmvqk (YouTube unlisted, 125s, voiced, title "Aegis — ZK Clean-Funds Compliance Coprocessor on Stellar (RISC Zero zkVM)")
 - **Testnet contracts (judge-verifiable on stellar.expert):**
   - Verifier — https://stellar.expert/explorer/testnet/contract/CBZAX43T4YNSWNWM2GCIHUSNWUAQYMOD5RJZVLNNC3UDIG6Z6IOQUZNB
   - Registry — https://stellar.expert/explorer/testnet/contract/CAI3XYL2KRM7BCJYN46DODKGIIKMFFNFWYPNKRRWYXVE3ZIXBTGQCERB
@@ -100,6 +100,6 @@ from `demo-video/aegis-demo-v2.html` + `demo-video/record-v2.js` (Playwright) +
   - `register_compliance` tx (on-chain Groth16 verify) — 25f9e655798756ab8b2d1fd368f566a1ba960a9dd95a5921d26523a920fd6542
 - [x] 2–3 min demo video (aegis-demo-voiced.mp4, 125s, voiced) — ready to upload
 - [x] Guest-logic test suite (9 unit tests: Merkle reconstruction, tamper rejection, demo root pin)
-- [ ] Upload demo video to YouTube (unlisted) — paste link above
+- [x] Upload demo video to YouTube (unlisted) — https://youtu.be/HwHKL6Jmvqk
 - [ ] Submit BUIDL on DoraHacks before 2026-07-03 17:00 UTC
 - [ ] Post in SDF Discord #zk-chat
