@@ -4,7 +4,7 @@ Ready-to-paste text for the DoraHacks BUIDL form, the demo video, and the SDF
 Discord `#zk-chat` post.
 
 ## DoraHacks BUIDL — project name
-`Aegis — Provable Clean-Funds Compliance Coprocessor`
+`Aegis — Provable Clean-Funds Compliance Coprocessor (RISC Zero zkVM)`
 
 ## DoraHacks BUIDL — short description (one-liner)
 A wallet proves — in zero knowledge — that its counterparties belong to a
@@ -19,11 +19,14 @@ transaction graph”) conflict on a transparent ledger. Aegis resolves that with
 zero knowledge:
 
 - **Off-chain**, a RISC Zero zkVM guest (Rust, no_std) takes a wallet’s private
-  counterparty graph + a Poseidon/SHA-256-committed ASP allow-set Merkle root,
-  and proves — without revealing the graph — that every one of K counterparties
-  is a member of the allow-set (Merkle membership), plus a nullifier
-  `SHA-256(secret || root)` for anti-replay. It commits a 109-byte journal and
-  produces a Groth16 seal.
+  counterparty graph + a SHA-256-committed ASP allow-set Merkle root (Poseidon2
+  host-fn swap-in is a one-line change for Protocol 25+), and proves — without
+  revealing the graph — that every one of K counterparties is a member of the
+  allow-set (Merkle membership), plus a domain-separated nullifier
+  `SHA-256("aegis_null" || wallet || secret || root || as_of_block)` that is
+  bound to the wallet AND the ledger (two wallets can't share a nullifier; one
+  wallet can't rotate its secret to bypass anti-replay). It commits a 109-byte
+  journal and produces a Groth16 seal.
 - **On-chain**, a Soroban `ComplianceRegistry` hashes the journal and calls the
   Nethermind `stellar-risc0-verifier` to verify the seal against
   `(image_id, journal_digest)` using BN254 host functions (Protocol 26+/27). It
@@ -40,8 +43,9 @@ zero knowledge:
 - No-proof wallet → `is_cleared` false → `transfer_if_cleared` reverts
   `NotCleared` (#9). The gate holds.
 
-**Performance:** guest runs in a single RISC Zero segment, 104,956 user cycles /
-262,144 total; on-chain verify is a single BN254 `pairing_check`.
+**Performance:** guest runs in a single RISC Zero segment, 105,224 user cycles /
+262,144 total (25,361 paging); on-chain verify is a single BN254 `pairing_check`
+(~12M Soroban instr).
 
 **Stack:** RISC Zero zkVM 3.0.x · Soroban (Protocol 27) · Nethermind
 stellar-risc0-verifier · Stellar CLI v27.
@@ -57,12 +61,13 @@ reachability, batch seal aggregation via `bn254_multi_pairing_check`) are listed
 in the README.
 
 ## Demo video
-`aegis-demo.mp4` (2–3 min terminal walkthrough, rendered from the **public
-testnet** run — real seal, image_id, journal, balances, and stellar.expert
-contract IDs). Upload to YouTube as unlisted and paste the link, or upload
-directly if DoraHacks allows. Generated from `demo-video/aegis-demo.html` +
-`demo-video/record.js` (Playwright) — reproducible: `cd demo-video && npm i &&
-node record.js` → webm → ffmpeg → mp4.
+`aegis-demo-voiced.mp4` (~2 min, 125s, voiced terminal walkthrough, rendered
+from the **public testnet** run — real seal, image_id, journal, balances, and
+stellar.expert contract IDs; end-card with repo link). Upload to YouTube as
+unlisted and paste the link, or upload directly if DoraHacks allows. Generated
+from `demo-video/aegis-demo-v2.html` + `demo-video/record-v2.js` (Playwright) +
+`demo-video/voice/` — reproducible: `cd demo-video && node record-v2.js` → webm
+→ ffmpeg → mp4 → merge voice.
 
 ## SDF Discord #zk-chat post
 > Sharing my Stellar Hacks: Real-World ZK submission — **Aegis**, a ZK compliance
@@ -83,6 +88,6 @@ node record.js` → webm → ffmpeg → mp4.
   - Registry — https://stellar.expert/explorer/testnet/contract/CAI3XYL2KRM7BCJYN46DODKGIIKMFFNFWYPNKRRWYXVE3ZIXBTGQCERB
   - Token — https://stellar.expert/explorer/testnet/contract/CDQDBN2HA64U4M3MCIDHHRQCL5XOXE5CVSZNFGBAKQ6LD5GFVNE67AMK
   - `register_compliance` tx (on-chain Groth16 verify) — 25f9e655798756ab8b2d1fd368f566a1ba960a9dd95a5921d26523a920fd6542
-- [ ] 2–3 min demo video (aegis-demo.mp4) attached/linked
+- [x] 2–3 min demo video (aegis-demo-voiced.mp4, 125s, voiced) — ready to upload
 - [ ] Submit BUIDL on DoraHacks before 2026-07-03 17:00 UTC
 - [ ] Post in SDF Discord #zk-chat
