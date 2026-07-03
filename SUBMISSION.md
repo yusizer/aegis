@@ -12,6 +12,15 @@ screened allow-set; a Soroban contract verifies the RISC Zero Groth16 seal
 on-chain and gates stablecoin transfers on that proof. Privacy preserved,
 compliance provable.
 
+## Links
+- **Repo:** https://github.com/yusizer/aegis
+- **Live web demo:** https://yusizer.github.io/aegis/ (interactive overview, clickable testnet contract/tx links on stellar.expert, visual demo flow, security model, comparison table)
+- **Demo video:** `aegis-demo-voiced.mp4` (125s, voiced) — upload to YouTube as unlisted, paste link here: `________________`
+- **Testnet contracts (judge-verifiable on stellar.expert):**
+  - Verifier — https://stellar.expert/explorer/testnet/contract/CBZAX43T4YNSWNWM2GCIHUSNWUAQYMOD5RJZVLNNC3UDIG6Z6IOQUZNB
+  - Registry — https://stellar.expert/explorer/testnet/contract/CAI3XYL2KRM7BCJYN46DODKGIIKMFFNFWYPNKRRWYXVE3ZIXBTGQCERB
+  - Token — https://stellar.expert/explorer/testnet/contract/CDQDBN2HA64U4M3MCIDHHRQCL5XOXE5CVSZNFGBAKQ6LD5GFVNE67AMK
+
 ## DoraHacks BUIDL — full description (paste)
 Aegis is a ZK compliance layer for stablecoins on Stellar. Today, compliance
 (“no flow to sanctioned addresses”) and privacy (“don’t publish your
@@ -83,11 +92,14 @@ from `demo-video/aegis-demo-v2.html` + `demo-video/record-v2.js` (Playwright) +
 
 ## Submission checklist
 - [x] Public open-source repo + README — https://github.com/yusizer/aegis
+- [x] Live web demo — https://yusizer.github.io/aegis/
 - [x] Deployed on public Stellar testnet (P27) — judge-verifiable on stellar.expert:
   - Verifier — https://stellar.expert/explorer/testnet/contract/CBZAX43T4YNSWNWM2GCIHUSNWUAQYMOD5RJZVLNNC3UDIG6Z6IOQUZNB
   - Registry — https://stellar.expert/explorer/testnet/contract/CAI3XYL2KRM7BCJYN46DODKGIIKMFFNFWYPNKRRWYXVE3ZIXBTGQCERB
   - Token — https://stellar.expert/explorer/testnet/contract/CDQDBN2HA64U4M3MCIDHHRQCL5XOXE5CVSZNFGBAKQ6LD5GFVNE67AMK
   - `register_compliance` tx (on-chain Groth16 verify) — 25f9e655798756ab8b2d1fd368f566a1ba960a9dd95a5921d26523a920fd6542
 - [x] 2–3 min demo video (aegis-demo-voiced.mp4, 125s, voiced) — ready to upload
+- [x] Guest-logic test suite (9 unit tests: Merkle reconstruction, tamper rejection, demo root pin)
+- [ ] Upload demo video to YouTube (unlisted) — paste link above
 - [ ] Submit BUIDL on DoraHacks before 2026-07-03 17:00 UTC
 - [ ] Post in SDF Discord #zk-chat

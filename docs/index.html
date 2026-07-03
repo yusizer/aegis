@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aegis — Provable Clean-Funds Compliance Coprocessor for Stellar</title>
+<meta name="description" content="A RISC Zero zkVM guest proves a wallet's counterparties are in a screened ASP allow-set; a Soroban contract verifies the Groth16 seal on-chain and gates stablecoin transfers. Deployed on public Stellar testnet.">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root { --bg:#0a0e1a; --panel:#111726; --border:#1f2937; --accent:#5b8def; --accent2:#7ee787; --warn:#f59e0b; --bad:#f87171; }
+  body { background:var(--bg); color:#e6edf3; font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto; }
+  .mono { font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; }
+  .glow { box-shadow:0 0 40px -10px rgba(91,141,239,.45); }
+  .gridbg { background-image:radial-gradient(circle at 1px 1px, rgba(91,141,239,.12) 1px, transparent 0); background-size:24px 24px; }
+  .chip { display:inline-flex; align-items:center; gap:.35rem; padding:.25rem .6rem; border-radius:999px; font-size:.72rem; font-weight:600; border:1px solid var(--border); background:var(--panel); }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:14px; }
+  .step-line { background:linear-gradient(180deg,var(--accent) 0%,var(--accent2) 100%); }
+  a.lk { color:var(--accent); text-decoration:underline; text-underline-offset:2px; }
+  a.lk:hover { color:var(--accent2); }
+  .id-pill { background:#0d1320; border:1px solid var(--border); padding:.35rem .55rem; border-radius:6px; font-size:.78rem; word-break:break-all; }
+  details summary { cursor:pointer; list-style:none; }
+  details summary::-webkit-details-marker { display:none; }
+  .pulse { animation:pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- NAV -->
+<nav class="sticky top-0 z-50 backdrop-blur border-b border-[var(--border)] bg-[#0a0e1abb]">
+  <div class="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-[var(--accent)] to-[var(--accent2)] flex items-center justify-center text-[#0a0e1a] font-bold text-sm">🛡️</div>
+      <span class="font-semibold tracking-tight">Aegis</span>
+      <span class="chip text-[var(--accent2)] border-[var(--accent2)]/30">RISC Zero zkVM</span>
+    </div>
+    <div class="hidden md:flex items-center gap-6 text-sm text-gray-400">
+      <a href="#how" class="hover:text-white">How it works</a>
+      <a href="#live" class="hover:text-white">Live on testnet</a>
+      <a href="#demo" class="hover:text-white">Demo</a>
+      <a href="#why" class="hover:text-white">Why RISC Zero</a>
+      <a href="https://github.com/yusizer/aegis" target="_blank" class="lk">GitHub ↗</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="gridbg">
+  <div class="max-w-6xl mx-auto px-5 py-20 md:py-28">
+    <div class="flex flex-wrap gap-2 mb-6">
+      <span class="chip text-[var(--accent2)] border-[var(--accent2)]/30">● Live on Stellar testnet</span>
+      <span class="chip">Stellar Hacks: Real-World ZK</span>
+      <span class="chip">Protocol 27 · BN254</span>
+      <span class="chip">Soroban</span>
+    </div>
+    <h1 class="text-4xl md:text-6xl font-bold tracking-tight leading-[1.05] max-w-3xl">
+      Provable <span class="text-[var(--accent2)]">clean-funds</span> compliance,<br>without revealing your counterparty graph.
+    </h1>
+    <p class="mt-6 text-lg text-gray-400 max-w-2xl leading-relaxed">
+      A wallet proves — <em>in zero knowledge</em> — that its counterparties belong to a screened
+      ASP allow-set. A Soroban contract verifies the RISC Zero <strong>Groth16</strong> seal on-chain
+      and gates the wallet's stablecoin transfers on that proof. Privacy preserved. Compliance provable.
+    </p>
+    <div class="mt-8 flex flex-wrap gap-3">
+      <a href="#live" class="px-5 py-2.5 rounded-lg bg-[var(--accent)] text-white font-semibold glow hover:brightness-110 transition">Inspect on testnet ↓</a>
+      <a href="https://github.com/yusizer/aegis" target="_blank" class="px-5 py-2.5 rounded-lg border border-[var(--border)] hover:border-[var(--accent)] font-semibold transition">View source ↗</a>
+    </div>
+    <div class="mt-10 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-3xl">
+      <div class="card p-4"><div class="text-2xl font-bold text-[var(--accent2)]">105,224</div><div class="text-xs text-gray-500 mt-1">user cycles · 1 segment</div></div>
+      <div class="card p-4"><div class="text-2xl font-bold text-[var(--accent2)]">~12M</div><div class="text-xs text-gray-500 mt-1">Soroban instr · on-chain verify</div></div>
+      <div class="card p-4"><div class="text-2xl font-bold text-[var(--accent2)]">109 B</div><div class="text-xs text-gray-500 mt-1">journal · env::commit_slice</div></div>
+      <div class="card p-4"><div class="text-2xl font-bold text-[var(--accent2)]">14</div><div class="text-xs text-gray-500 mt-1">enforced error codes</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- HOW -->
+<section id="how" class="max-w-6xl mx-auto px-5 py-20">
+  <h2 class="text-3xl font-bold tracking-tight mb-3">How it works</h2>
+  <p class="text-gray-400 mb-10 max-w-2xl">The proof is a <strong>reusable attestation</strong> that gates any SEP-41 transfer — the same clearance unlocks USDC, EURC, any token — rather than a one-shot shielded pool.</p>
+
+  <div class="grid md:grid-cols-3 gap-4">
+    <div class="card p-6">
+      <div class="text-[var(--accent)] font-mono text-sm mb-3">1 · PROVE (off-chain)</div>
+      <h3 class="font-semibold mb-2">RISC Zero zkVM guest</h3>
+      <p class="text-sm text-gray-400 leading-relaxed">A Rust <span class="mono text-gray-300">no_std</span> guest takes the wallet's private counterparty graph + an ASP allow-set Merkle root and proves every one of K counterparties is a member — without revealing them. Commits a 109-byte journal, emits a selector-prefixed Groth16 seal.</p>
+      <div class="mono text-xs text-gray-500 mt-3 bg-[#0d1320] rounded p-2 border border-[var(--border)]">assert!(k > 0)<br>nullifier = SHA256("aegis_null"‖wallet‖secret‖root‖block)</div>
+    </div>
+    <div class="card p-6">
+      <div class="text-[var(--accent)] font-mono text-sm mb-3">2 · VERIFY (on-chain)</div>
+      <h3 class="font-semibold mb-2">Soroban ComplianceRegistry</h3>
+      <p class="text-sm text-gray-400 leading-relaxed">Hashes the journal, calls the Nethermind <span class="mono text-gray-300">stellar-risc0-verifier</span> to verify the seal against <span class="mono text-gray-300">(image_id, journal_digest)</span> via BN254 host functions, then enforces: image_id, allow_set_root, wallet binding, pass==1, nullifier non-replay.</p>
+      <div class="mono text-xs text-gray-500 mt-3 bg-[#0d1320] rounded p-2 border border-[var(--border)]">verify_proof → try_invoke<br>Ok(Ok(_)) ⇒ genuine pass</div>
+    </div>
+    <div class="card p-6">
+      <div class="text-[var(--accent2)] font-mono text-sm mb-3">3 · GATE (on-chain)</div>
+      <h3 class="font-semibold mb-2">transfer_if_cleared</h3>
+      <p class="text-sm text-gray-400 leading-relaxed">Reverts <span class="mono text-[var(--bad)]">NotCleared (#9)</span> unless <span class="mono text-gray-300">from</span> is currently cleared. <strong>ZK is load-bearing</strong> — remove the proof and the gate cannot be satisfied; there is no other path to "cleared".</p>
+      <div class="mono text-xs text-gray-500 mt-3 bg-[#0d1320] rounded p-2 border border-[var(--border)]">clearance TTL window<br>SEP-41 transfer on success</div>
+    </div>
+  </div>
+
+  <!-- Architecture flow -->
+  <div class="card p-6 mt-6 overflow-x-auto">
+    <div class="text-xs text-gray-500 mb-4 mono">flow: prove → verify → clearance → gated transfer</div>
+    <div class="flex items-center gap-2 md:gap-3 min-w-[640px]">
+      <div class="card p-3 text-center flex-1"><div class="text-xl">🧠</div><div class="text-xs mt-1 text-gray-400">Aegis guest<br><span class="text-gray-600">RISC Zero zkVM</span></div></div>
+      <div class="text-[var(--accent)] text-xl">→</div>
+      <div class="card p-3 text-center flex-1"><div class="text-xl">🔐</div><div class="text-xs mt-1 text-gray-400">Groth16 seal<br><span class="text-gray-600">selector-prefixed</span></div></div>
+      <div class="text-[var(--accent)] text-xl">→</div>
+      <div class="card p-3 text-center flex-1"><div class="text-xl">📜</div><div class="text-xs mt-1 text-gray-400">ComplianceRegistry<br><span class="text-gray-600">Soroban</span></div></div>
+      <div class="text-[var(--accent)] text-xl">→</div>
+      <div class="card p-3 text-center flex-1"><div class="text-xl">✅</div><div class="text-xs mt-1 text-gray-400">clearance<br><span class="text-gray-600">TTL window</span></div></div>
+      <div class="text-[var(--accent2)] text-xl">→</div>
+      <div class="card p-3 text-center flex-1"><div class="text-xl">💸</div><div class="text-xs mt-1 text-gray-400">SEP-41 transfer<br><span class="text-gray-600">USDC / EURC / any</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- LIVE ON TESTNET -->
+<section id="live" class="max-w-6xl mx-auto px-5 py-20 border-t border-[var(--border)]">
+  <div class="flex items-center gap-3 mb-3">
+    <span class="w-2.5 h-2.5 rounded-full bg-[var(--accent2)] pulse"></span>
+    <h2 class="text-3xl font-bold tracking-tight">Live on public Stellar testnet</h2>
+  </div>
+  <p class="text-gray-400 mb-8 max-w-2xl">Every contract and transaction is judge-verifiable on stellar.expert. Persistent entries are bumped to ~100k ledgers, so the deploy stays live for the judging window.</p>
+
+  <div class="grid md:grid-cols-3 gap-4">
+    <div class="card p-5">
+      <div class="text-xs text-gray-500 mb-1">Groth16Verifier · Nethermind</div>
+      <div class="font-semibold mb-3">BN254 pairing check</div>
+      <div class="id-pill mono mb-3">CBZAX43T4YNSWNWM2GCIHUSNWUAQYMOD5RJZVLNNC3UDIG6Z6IOQUZNB</div>
+      <a class="lk text-sm" href="https://stellar.expert/explorer/testnet/contract/CBZAX43T4YNSWNWM2GCIHUSNWUAQYMOD5RJZVLNNC3UDIG6Z6IOQUZNB" target="_blank">stellar.expert ↗</a>
+    </div>
+    <div class="card p-5">
+      <div class="text-xs text-gray-500 mb-1">ComplianceRegistry · Aegis</div>
+      <div class="font-semibold mb-3">Seal verify + claims + gate</div>
+      <div class="id-pill mono mb-3">CAI3XYL2KRM7BCJYN46DODKGIIKMFFNFWYPNKRRWYXVE3ZIXBTGQCERB</div>
+      <a class="lk text-sm" href="https://stellar.expert/explorer/testnet/contract/CAI3XYL2KRM7BCJYN46DODKGIIKMFFNFWYPNKRRWYXVE3ZIXBTGQCERB" target="_blank">stellar.expert ↗</a>
+    </div>
+    <div class="card p-5">
+      <div class="text-xs text-gray-500 mb-1">MockToken · demo SEP-41</div>
+      <div class="font-semibold mb-3">Token the gate transfers</div>
+      <div class="id-pill mono mb-3">CDQDBN2HA64U4M3MCIDHHRQCL5XOXE5CVSZNFGBAKQ6LD5GFVNE67AMK</div>
+      <a class="lk text-sm" href="https://stellar.expert/explorer/testnet/contract/CDQDBN2HA64U4M3MCIDHHRQCL5XOXE5CVSZNFGBAKQ6LD5GFVNE67AMK" target="_blank">stellar.expert ↗</a>
+    </div>
+  </div>
+
+  <div class="card p-5 mt-4">
+    <div class="text-xs text-gray-500 mb-3">Key transactions (testnet)</div>
+    <div class="grid md:grid-cols-3 gap-3 text-sm">
+      <div><div class="text-gray-500 text-xs mb-1">init</div><a class="lk mono text-xs" href="https://stellar.expert/explorer/testnet/tx/986b3da8" target="_blank">986b3da8… ↗</a></div>
+      <div><div class="text-gray-500 text-xs mb-1">register_compliance (on-chain Groth16 verify)</div><a class="lk mono text-xs" href="https://stellar.expert/explorer/testnet/tx/25f9e655798756ab8b2d1fd368f566a1ba960a9dd95a5921d26523a920fd6542" target="_blank">25f9e655… ↗</a></div>
+      <div><div class="text-gray-500 text-xs mb-1">transfer_if_cleared</div><a class="lk mono text-xs" href="https://stellar.expert/explorer/testnet/tx/1a942cf1" target="_blank">1a942cf1… ↗</a></div>
+    </div>
+  </div>
+
+  <div class="card p-5 mt-4">
+    <div class="text-xs text-gray-500 mb-3">Reproducible guest constants</div>
+    <div class="grid md:grid-cols-2 gap-3 text-sm">
+      <div><div class="text-gray-500 text-xs mb-1">Image ID</div><div class="id-pill mono">eddc2223c80408e93512ec945c1832e450e78c334fb482c318c17c929d2d4b6f</div></div>
+      <div><div class="text-gray-500 text-xs mb-1">Demo allow-set root (depth-2, 4 leaves)</div><div class="id-pill mono">48c73f7821a58a8d2a703e5b39c571c0aa20cf14abcd0af8f2b955bc202998de</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section id="demo" class="max-w-6xl mx-auto px-5 py-20 border-t border-[var(--border)]">
+  <h2 class="text-3xl font-bold tracking-tight mb-3">End-to-end demo</h2>
+  <p class="text-gray-400 mb-10 max-w-2xl">Run on Protocol 27 — public testnet + local standalone. Real seal, image_id, journal, balances.</p>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <!-- Clean path -->
+    <div class="card p-6 border-l-4 border-l-[var(--accent2)]">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="text-[var(--accent2)] text-lg">✓</span>
+        <h3 class="font-semibold">Clean path · wallet alice (counterparties in allow-set)</h3>
+      </div>
+      <ol class="space-y-3 text-sm text-gray-300">
+        <li class="flex gap-3"><span class="mono text-gray-600 mt-0.5">1</span><div><span class="mono text-gray-400">register_compliance(alice, journal, seal, image_id)</span> → on-chain Groth16 verify <span class="text-[var(--accent2)]">passes</span>, clearance stored.</div></li>
+        <li class="flex gap-3"><span class="mono text-gray-600 mt-0.5">2</span><div><span class="mono text-gray-400">is_cleared(alice)</span> → <span class="text-[var(--accent2)]">true</span>; k=2, as_of_block=12345, nullifier <span class="mono">0x6831a291…</span></div></li>
+        <li class="flex gap-3"><span class="mono text-gray-600 mt-0.5">3</span><div><span class="mono text-gray-400">transfer_if_cleared(alice → bob, 1000)</span> → <span class="text-[var(--accent2)]">succeeds</span></div></li>
+        <li class="flex gap-3"><span class="mono text-gray-600 mt-0.5">4</span><div>Balances: alice <span class="mono">999_999_000</span>, bob <span class="mono">1_000</span></div></li>
+      </ol>
+    </div>
+    <!-- Blocked path -->
+    <div class="card p-6 border-l-4 border-l-[var(--bad)]">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="text-[var(--bad)] text-lg">✕</span>
+        <h3 class="font-semibold">Blocked path · wallet bob (no proof)</h3>
+      </div>
+      <ol class="space-y-3 text-sm text-gray-300">
+        <li class="flex gap-3"><span class="mono text-gray-600 mt-0.5">1</span><div><span class="mono text-gray-400">is_cleared(bob)</span> → <span class="text-[var(--bad)]">false</span></div></li>
+        <li class="flex gap-3"><span class="mono text-gray-600 mt-0.5">2</span><div><span class="mono text-gray-400">transfer_if_cleared(bob → alice, 1)</span> → <span class="text-[var(--bad)]">reverts Error(Contract, #9) = NotCleared</span></div></li>
+        <li class="flex gap-3"><span class="mono text-gray-600 mt-0.5">3</span><div class="text-gray-400">The gate holds. ZK is load-bearing — no other path to "cleared".</div></li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Negative tests -->
+  <div class="card p-6 mt-4">
+    <h3 class="font-semibold mb-4">Soundness — negative tests (on-chain verifier binding)</h3>
+    <div class="grid md:grid-cols-3 gap-3 text-sm">
+      <div class="bg-[#0d1320] rounded-lg p-4 border border-[var(--border)]">
+        <div class="text-[var(--bad)] font-mono text-xs mb-2">TAMPERED SEAL</div>
+        <p class="text-gray-400">Flip one byte → <span class="mono">#10 ProofVerificationFailed</span>. Verifier traps in <span class="mono">bn254_multi_pairing_check</span> ("point not on curve"). A forged seal cannot produce a clearance.</p>
+      </div>
+      <div class="bg-[#0d1320] rounded-lg p-4 border border-[var(--border)]">
+        <div class="text-[var(--warn)] font-mono text-xs mb-2">WRONG IMAGE_ID</div>
+        <p class="text-gray-400">Seal from a different guest → <span class="mono">#11 BadImageId</span>, caught before the verifier call.</p>
+      </div>
+      <div class="bg-[#0d1320] rounded-lg p-4 border border-[var(--border)]">
+        <div class="text-[var(--warn)] font-mono text-xs mb-2">K = 0</div>
+        <p class="text-gray-400">Guest <span class="mono">assert!(k>0)</span> makes the proof un-generatable; registry also reverts <span class="mono">#13 ZeroK</span>. The "all compliant" claim cannot be vacuously true.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY RISC ZERO -->
+<section id="why" class="max-w-6xl mx-auto px-5 py-20 border-t border-[var(--border)]">
+  <h2 class="text-3xl font-bold tracking-tight mb-3">Why RISC Zero for compliance</h2>
+  <p class="text-gray-400 mb-10 max-w-2xl">Aegis is the only RISC Zero zkVM <em>compliance coprocessor</em> in the field — other RISC Zero projects target proof-of-reserves, receipts, or settlement, while the remaining compliance submissions use Noir or Circom hand-written circuits.</p>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="card p-6">
+      <h3 class="font-semibold mb-2">zkVM over hand-circuits</h3>
+      <p class="text-sm text-gray-400">Compliance logic is branching and graph-shaped (membership today, deny-set + graph reachability tomorrow). A Rust program compiled by the zkVM is cheaper to get right and to audit than an equivalent hand-rolled Noir/Circom circuit, and composes with standard crates.</p>
+    </div>
+    <div class="card p-6">
+      <h3 class="font-semibold mb-2">SDF-aligned infrastructure</h3>
+      <p class="text-sm text-gray-400">RISC Zero on Stellar is one of SDF's named ZK stacks, with an official Nethermind on-chain verifier (<span class="mono">stellar-risc0-verifier</span>) that Aegis forks — built on promoted primitives, not a bespoke circuit.</p>
+    </div>
+    <div class="card p-6">
+      <h3 class="font-semibold mb-2">Groth16 — the right trade for a gate</h3>
+      <p class="text-sm text-gray-400">A compliance gate verifies proofs <em>frequently</em> (every transfer). Groth16 seals are ~260 B and verify in a single BN254 <span class="mono">pairing_check</span> (~12M instr); STARKs would be ~100 KB and blow the 100M-instruction WASM budget. vs Noir/UltraHonk (~35M instr), Groth16 is cheaper for this access pattern.</p>
+    </div>
+    <div class="card p-6">
+      <h3 class="font-semibold mb-2">Coprocessor, not a mixer</h3>
+      <p class="text-sm text-gray-400">The proof is a reusable attestation that <em>gates</em> any SEP-41 transfer — the same clearance unlocks USDC, EURC, any token — rather than a one-shot shielded pool. This is the "proof layer under SDF's Confidential Tokens policy engine" framing.</p>
+    </div>
+  </div>
+
+  <!-- Comparison table -->
+  <div class="card p-6 mt-6 overflow-x-auto">
+    <h3 class="font-semibold mb-4">Aegis vs typical compliance-pool submissions</h3>
+    <table class="w-full text-sm min-w-[640px]">
+      <thead>
+        <tr class="text-left text-gray-500 border-b border-[var(--border)]">
+          <th class="py-2 pr-4 font-medium">Property</th>
+          <th class="py-2 px-4 font-medium text-[var(--accent2)]">Aegis (RISC Zero)</th>
+          <th class="py-2 px-4 font-medium">Typical Noir/Circom pool</th>
+        </tr>
+      </thead>
+      <tbody class="text-gray-300">
+        <tr class="border-b border-[var(--border)]"><td class="py-2 pr-4 text-gray-500">ZK backend</td><td class="px-4">zkVM (Rust program)</td><td class="px-4">hand-written circuit</td></tr>
+        <tr class="border-b border-[var(--border)]"><td class="py-2 pr-4 text-gray-500">On-chain verify cost</td><td class="px-4">~12M instr (single pairing)</td><td class="px-4">~35M instr (UltraHonk)</td></tr>
+        <tr class="border-b border-[var(--border)]"><td class="py-2 pr-4 text-gray-500">Proof scope</td><td class="px-4">reusable attestation (gates N transfers)</td><td class="px-4">one-shot withdraw</td></tr>
+        <tr class="border-b border-[var(--border)]"><td class="py-2 pr-4 text-gray-500">Tokens gated</td><td class="px-4">any SEP-41 (USDC/EURC/…)</td><td class="px-4">single pool token</td></tr>
+        <tr class="border-b border-[var(--border)]"><td class="py-2 pr-4 text-gray-500">Nullifier binding</td><td class="px-4">wallet ‖ secret ‖ root ‖ ledger</td><td class="px-4">note-secret only (typical)</td></tr>
+        <tr><td class="py-2 pr-4 text-gray-500">Audit surface</td><td class="px-4">Rust program + standard crates</td><td class="px-4">custom circuit constraints</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- SECURITY -->
+<section class="max-w-6xl mx-auto px-5 py-20 border-t border-[var(--border)]">
+  <h2 class="text-3xl font-bold tracking-tight mb-3">Security model</h2>
+  <p class="text-gray-400 mb-8 max-w-2xl">What is cryptographically enforced vs what is not. Stated honestly — this is a hackathon prototype, not audited.</p>
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="card p-6 border-l-4 border-l-[var(--accent2)]">
+      <h3 class="font-semibold mb-3 text-[var(--accent2)]">Enforced by ZK / on-chain</h3>
+      <ul class="space-y-2 text-sm text-gray-300">
+        <li>• Membership — every K counterparty is a leaf of the allow-set Merkle root</li>
+        <li>• Nullifier non-replay (wallet ‖ secret ‖ root ‖ ledger bound)</li>
+        <li>• <span class="mono">image_id</span> match — seal from a different guest rejected</li>
+        <li>• <span class="mono">allow_set_root</span> match — proof against a stale root rejected</li>
+        <li>• <span class="mono">wallet</span> match via <span class="mono">Address::to_payload</span></li>
+        <li>• <span class="mono">pass==1</span> and <span class="mono">k>0</span> — vacuous truth impossible</li>
+        <li>• Admin-gated <span class="mono">init</span> + <span class="mono">require_auth</span> on all mutating fns</li>
+        <li>• Persistent-entry TTL bumped (100k ledgers) — no silent eviction</li>
+      </ul>
+    </div>
+    <div class="card p-6 border-l-4 border-l-[var(--warn)]">
+      <h3 class="font-semibold mb-3 text-[var(--warn)]">Not enforced (production extensions)</h3>
+      <ul class="space-y-2 text-sm text-gray-300">
+        <li>• Counterparty-set completeness — guest proves "all K I disclosed are clean", not "I disclosed all". Bind to real on-chain graph via ASP-countersigned commitment (main extension).</li>
+        <li>• Gate is opt-in — <span class="mono">transfer_if_cleared</span> is a compliant path; direct <span class="mono">token.transfer</span> is not blocked. Production: SAC controlled-token or transfer proxy.</li>
+        <li>• Membership only in MVP — deny-set + graph reachability architected, not in demo guest.</li>
+        <li>• SHA-256 demo tree — production swaps Poseidon2 (Stellar host fn).</li>
+        <li>• Local proving for demo — production shape is a relayer proving service.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- LIMITATIONS -->
+<section class="max-w-6xl mx-auto px-5 py-20 border-t border-[var(--border)]">
+  <details>
+    <summary class="text-2xl font-bold tracking-tight mb-3 flex items-center gap-2">Honest limitations & future work <span class="text-gray-600 text-sm">▾</span></summary>
+    <ul class="space-y-2 text-sm text-gray-400 mt-6 list-disc pl-5">
+      <li>Counterparty-set completeness not enforced by ZK (main production extension).</li>
+      <li>Gate is opt-in; production needs token/issuer to check <span class="mono">is_cleared</span>.</li>
+      <li>Demo tree fixed (depth-2, 4 leaves, SHA-256) — production swaps Poseidon2.</li>
+      <li>Membership only; deny-set + graph reachability is a stretch goal.</li>
+      <li>No batch aggregation yet — N wallets = N verifies (planned: one <span class="mono">bn254_multi_pairing_check</span>).</li>
+      <li>Local proving for demo; relayer proving service is the production shape.</li>
+      <li>Demo video is a terminal-replay rendered from a real run's artifacts via Playwright — not a live screen capture. All values reproducible from <span class="mono">scripts/</span>.</li>
+      <li>Hackathon prototype — <strong>not audited</strong>; the on-chain Groth16 verifier is itself a Stellar dev preview.</li>
+    </ul>
+  </details>
+</section>
+
+<!-- FOOTER -->
+<footer class="border-t border-[var(--border)]">
+  <div class="max-w-6xl mx-auto px-5 py-12 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+    <div>
+      <div class="flex items-center gap-2.5 mb-2">
+        <div class="w-6 h-6 rounded-md bg-gradient-to-br from-[var(--accent)] to-[var(--accent2)] flex items-center justify-center text-[#0a0e1a] text-xs">🛡️</div>
+        <span class="font-semibold">Aegis — Provable Clean-Funds Compliance Coprocessor</span>
+      </div>
+      <p class="text-sm text-gray-500">Stellar Hacks: Real-World ZK · RISC Zero zkVM + Soroban · MIT license</p>
+    </div>
+    <div class="flex gap-3">
+      <a href="https://github.com/yusizer/aegis" target="_blank" class="px-4 py-2 rounded-lg border border-[var(--border)] hover:border-[var(--accent)] text-sm transition">GitHub ↗</a>
+      <a href="https://stellar.expert/explorer/testnet/contract/CAI3XYL2KRM7BCJYN46DODKGIIKMFFNFWYPNKRRWYXVE3ZIXBTGQCERB" target="_blank" class="px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-semibold glow hover:brightness-110 transition">Registry on testnet ↗</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

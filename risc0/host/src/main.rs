@@ -156,3 +156,132 @@ fn main() -> Result<()> {
     println!("wrote proof.txt");
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// SHA-256 of the empty input — canonical known vector.
+    #[test]
+    fn sha256_empty_known_vector() {
+        assert_eq!(
+            hex::encode(sha256(&[])),
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
+    }
+
+    /// sha256_pair is order-sensitive: H(a||b) != H(b||a).
+    #[test]
+    fn sha256_pair_is_order_sensitive() {
+        let a = [0x11u8; 32];
+        let b = [0x22u8; 32];
+        assert_ne!(sha256_pair(&a, &b), sha256_pair(&b, &a));
+    }
+
+    /// SHA-256 is deterministic.
+    #[test]
+    fn sha256_is_deterministic() {
+        let id = [0x01u8; 32];
+        assert_eq!(sha256(&id), sha256(&id));
+    }
+
+    /// build_tree on 4 leaves returns a 32-byte root (non-zero).
+    #[test]
+    fn build_tree_4_leaves_returns_nonzero_root() {
+        let leaves: Vec<[u8; 32]> = (0u8..4).map(|i| [i + 1; 32]).collect();
+        let (root, paths) = build_tree(&leaves);
+        assert_ne!(root, [0u8; 32]);
+        assert_eq!(paths.len(), 4);
+        // depth-2 tree → 2 siblings per leaf
+        assert_eq!(paths[0].len(), 2);
+        assert_eq!(paths[3].len(), 2);
+    }
+
+    /// Each Merkle path must reconstruct the root from its leaf — the core
+    /// membership invariant the Aegis guest relies on.
+    #[test]
+    fn merkle_paths_reconstruct_root_for_every_leaf() {
+        let leaves: Vec<[u8; 32]> = (0u8..8).map(|i| [i + 1; 32]).collect();
+        let (root, paths) = build_tree(&leaves);
+        for (i, leaf) in leaves.iter().enumerate() {
+            let mut node = sha256(leaf);
+            for (sib, dir) in &paths[i] {
+                node = if *dir == 0 {
+                    sha256_pair(&node, sib)
+                } else {
+                    sha256_pair(sib, &node)
+                };
+            }
+            assert_eq!(node, root, "path for leaf {i} does not reconstruct root");
+        }
+    }
+
+    /// A wrong sibling must NOT reconstruct the root — tamper detection.
+    #[test]
+    fn merkle_tampered_sibling_rejected() {
+        let leaves: Vec<[u8; 32]> = (0u8..4).map(|i| [i + 1; 32]).collect();
+        let (root, paths) = build_tree(&leaves);
+        let mut tampered = paths[0].clone();
+        tampered[0].0[0] ^= 0xff; // flip bits in first sibling
+        let mut node = sha256(&leaves[0]);
+        for (sib, dir) in &tampered {
+            node = if *dir == 0 { sha256_pair(&node, sib) } else { sha256_pair(sib, &node) };
+        }
+        assert_ne!(node, root, "tampered sibling must not reconstruct root");
+    }
+
+    /// encode_proof_blob round-trips: parse id + depth + (sib,dir) pairs back.
+    #[test]
+    fn encode_proof_blob_roundtrips() {
+        let leaves: Vec<[u8; 32]> = (0u8..4).map(|i| [i + 1; 32]).collect();
+        let (root, paths) = build_tree(&leaves);
+        let blob = encode_proof_blob(&leaves, &paths);
+        // parse manually
+        let mut off = 0usize;
+        for (i, _leaf) in leaves.iter().enumerate() {
+            let mut id = [0u8; 32];
+            id.copy_from_slice(&blob[off..off + 32]);
+            off += 32;
+            let depth = u32::from_le_bytes([blob[off], blob[off + 1], blob[off + 2], blob[off + 3]]);
+            off += 4;
+            assert_eq!(depth as usize, paths[i].len());
+            let mut node = sha256(&id);
+            for _ in 0..depth {
+                let mut sib = [0u8; 32];
+                sib.copy_from_slice(&blob[off..off + 32]);
+                off += 32;
+                let dir = blob[off];
+                off += 1;
+                node = if dir == 0 {
+                    sha256_pair(&node, &sib)
+                } else {
+                    sha256_pair(&sib, &node)
+                };
+            }
+            assert_eq!(node, root, "blob path for leaf {i} does not reconstruct root");
+        }
+        assert_eq!(off, blob.len(), "blob fully consumed");
+    }
+
+    /// build_tree rejects non-power-of-two leaf counts (guard for demo sizing).
+    #[test]
+    #[should_panic(expected = "need power-of-two leaves")]
+    fn build_tree_rejects_non_power_of_two() {
+        let leaves: Vec<[u8; 32]> = (0u8..3).map(|i| [i + 1; 32]).collect();
+        let _ = build_tree(&leaves);
+    }
+
+    /// Demo invariant: the README's published root (depth-2, 4 leaves [1..]).
+    /// Pins the exact value judges see on the web demo / stellar.expert.
+    #[test]
+    fn demo_allow_set_root_matches_readme() {
+        let leaves: Vec<[u8; 32]> = (0u8..4).map(|i| [i + 1; 32]).collect();
+        let (root, _) = build_tree(&leaves);
+        // README §Contracts: demo allow-set root (depth-2, 4 leaves)
+        assert_eq!(
+            hex::encode(root),
+            "48c73f7821a58a8d2a703e5b39c571c0aa20cf14abcd0af8f2b955bc202998de"
+        );
+    }
+}
+

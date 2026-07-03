@@ -11,6 +11,10 @@
 Stellar testnet** — judges can inspect every transaction on stellar.expert (links
 below).
 
+> **Live web demo:** https://yusizer.github.io/aegis/ — interactive overview,
+> clickable testnet contract/tx links, visual demo flow, security model and
+> comparison table.
+
 ---
 
 ## Why
@@ -69,6 +73,38 @@ non-replay. Only then is the wallet marked **cleared** for a TTL window.
 > remove the proof and the gate cannot be satisfied — there is no other path to
 > "cleared".
 
+## Security model — enforced vs not (stated honestly)
+
+**Enforced by ZK / on-chain:**
+- **Membership** — every one of the K counterparties is a leaf of the allow-set
+  Merkle root the proof was checked against.
+- **Nullifier non-replay** — `SHA-256("aegis_null" || wallet || secret || root ||
+  as_of_block)`, domain-separated and bound to **the wallet AND the ledger**: two
+  wallets cannot share a nullifier, one wallet cannot rotate its secret to bypass
+  anti-replay, and the same `(secret, root)` can legitimately re-prove as the ASP
+  root advances.
+- **`image_id` match** — a seal from a different guest program is rejected
+  (`#11 BadImageId`).
+- **`allow_set_root` match** — a proof against a stale root is rejected
+  (`#6 RootMismatch`).
+- **`wallet` binding** via `Address::to_payload` (`#7 WalletMismatch`).
+- **`pass == 1` and `k > 0`** — the "all counterparties compliant" claim cannot
+  be vacuously true (`#5 ProofNotPassed`, `#13 ZeroK`; guest `assert!(k > 0)`).
+- **Admin-gated `init`** + `require_auth` on every mutating fn; persistent-entry
+  TTL bumped to 100k ledgers so a public deploy doesn't silently evict.
+
+**Not enforced (production extensions, not bugs):**
+- **Counterparty-set completeness** — the guest proves "all K I disclosed are
+  clean", not "I disclosed all my counterparties". Binding the disclosed set to
+  the wallet's real on-chain activity (ASP-countersigned commitment) is the main
+  extension. The nullifier, wallet, image_id and root binding are all enforced;
+  this is specifically about *which* counterparties the prover chooses to disclose.
+- **Gate is opt-in** — `transfer_if_cleared` is a compliant path; a malicious
+  wallet could call `token.transfer` directly. Production: the SAC controlled-token
+  pattern or a transfer proxy.
+- **Membership only** in the MVP — deny-set + graph reachability is architected
+  but not in the demo guest.
+
 ## Why RISC Zero (differentiation)
 
 Aegis is the **only RISC Zero zkVM *compliance* coprocessor** in the field —
@@ -97,6 +133,17 @@ compliance use-case:
 - **Cycle optimization is reported** (single segment, ~105k user cycles, the
   accelerator headroom noted above) — the same win pattern that took the prior
   RISC Zero hackathon winner (Chickenz.io) to 1st place.
+
+### Aegis vs typical compliance-pool submissions
+
+| Property | Aegis (RISC Zero) | Typical Noir/Circom pool |
+|---|---|---|
+| ZK backend | zkVM (Rust program) | hand-written circuit |
+| On-chain verify cost | ~12M instr (single BN254 pairing) | ~35M instr (UltraHonk) |
+| Proof scope | reusable attestation (gates N transfers) | one-shot withdraw |
+| Tokens gated | any SEP-41 (USDC / EURC / …) | single pool token |
+| Nullifier binding | wallet ‖ secret ‖ root ‖ ledger | note-secret only (typical) |
+| Audit surface | Rust program + standard crates | custom circuit constraints |
 
 ## Architecture
 
