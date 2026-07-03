@@ -272,19 +272,46 @@ one-line change for Protocol 25+).
 aegis/
 ├── risc0/                      # zkVM project (cargo workspace)
 │   ├── host/                   # off-chain prover: builds demo tree, runs guest, emits seal+journal
+│   │   └── src/main.rs         # + 9 unit tests (Merkle reconstruct, tamper reject, demo root pin)
 │   └── methods/
 │       ├── guest/              # Aegis compliance guest (no_std, Merkle membership + nullifier)
 │       └── src/                # methods lib (ELF + image id)
 ├── contracts/
 │   ├── compliance-registry/    # Aegis ComplianceRegistry (Soroban)
 │   └── mock-token/             # demo SEP-41 token
+├── docs/                       # live web demo (GitHub Pages) -> https://yusizer.github.io/aegis/
 ├── scripts/                    # m2_* local P27, m4_demo E2E, m5_testnet public deploy
 ├── artifacts/                  # built wasms (groth16_verifier, compliance_registry, mock_token)
-├── demo-video/                 # Playwright terminal-replay generator -> aegis-demo.mp4
+├── demo-video/                 # Playwright terminal-replay generator -> aegis-demo-voiced.mp4
 ├── demo-script.md              # 2-3 min video walkthrough script
 ├── SUBMISSION.md               # paste-ready DoraHacks BUIDL + Discord #zk-chat text
 └── README.md
 ```
+
+## Tests
+
+```bash
+cargo test -p aegis_host
+```
+
+9 unit tests cover the Merkle/SHA-256 logic the guest relies on — all pass:
+
+```
+test tests::sha256_empty_known_vector .............. ok
+test tests::sha256_is_deterministic ................ ok
+test tests::sha256_pair_is_order_sensitive ......... ok
+test tests::build_tree_4_leaves_returns_nonzero_root  ok
+test tests::merkle_paths_reconstruct_root_for_every_leaf ok
+test tests::merkle_tampered_sibling_rejected ....... ok
+test tests::encode_proof_blob_roundtrips ........... ok
+test tests::build_tree_rejects_non_power_of_two .... ok
+test tests::demo_allow_set_root_matches_readme ..... ok
+test result: ok. 9 passed; 0 failed
+```
+
+These pin the guest's membership invariant (every Merkle path reconstructs
+the root), tamper detection (a flipped sibling must not pass), proof-blob
+encoding, and the exact demo allow-set root published in this README.
 
 ## Build & run
 
